@@ -83,14 +83,70 @@ Edit `index.html` to customize:
 - **Max messages**: Change `maxMessages` (line ~746)
 - **Particle effects**: Modify `createParticles()` (line ~749)
 
-## 🔐 Getting Your API Token
+## 🔐 Azure AD Setup (Required for Live Data)
 
-1. Go to Viva Engage Developer Settings
-2. Register your app (if needed)
-3. Generate an OAuth 2.0 token
-4. Copy the token into Settings
+### Current Status (2026-02-19)
+✅ Azure AD multi-tenant authentication working
+✅ Community list loading successfully
+✅ Real thread topics displaying from selected community
+✅ Groups API integration (using `/groups/{id}/threads` endpoint)
+🔧 Working on: Extracting author names from thread posts
+🔧 Working on: Removing residual demo content
 
-**Note:** For public events, demo mode is recommended. For internal events with proper authentication, use live API integration.
+### Setup Instructions
+
+1. **Create Azure AD App Registration:**
+   - Go to https://portal.azure.com
+   - Navigate to Azure Active Directory → App registrations → New registration
+   - Name: "Engage Fall"
+   - Supported account types: "Accounts in any organizational directory (Any Azure AD directory - Multitenant)"
+   - Redirect URI: Select "Single-page application (SPA)" and enter: `https://sam0.github.io/Engaged/`
+   - Click Register
+
+2. **Configure API Permissions:**
+   - In your app, go to API permissions → Add a permission
+   - Select Microsoft Graph → Delegated permissions
+   - Add these permissions:
+     - `User.Read`
+     - `Community.Read.All`
+     - `Group.Read.All` (required for reading threads)
+   - Click "Grant admin consent"
+
+3. **Get Your Client ID:**
+   - Copy the "Application (client) ID" from the Overview page
+
+4. **Configure the App:**
+   - Open https://sam0.github.io/Engaged/
+   - Click the configuration button
+   - Paste your Application (client) ID
+   - Click "Save & Sign In"
+   - Sign in with your organizational account
+   - Select a community from the dropdown
+   - Click "Save Settings"
+
+### What's Working
+- Multi-tenant authentication (works with any Azure AD tenant)
+- Community list auto-populates after sign-in
+- Real thread topics display from selected community
+- Engagement metrics (likes, comments) shown
+- Live feed updates every 5 seconds (configurable)
+
+### Technical Implementation
+- **Authentication**: MSAL.js v2.38.1 with OAuth 2.0 implicit flow
+- **API**: Microsoft Graph API v1.0 (Groups API for threads)
+- **Endpoint**: `/groups/{groupId}/threads?$expand=posts`
+- **Community ID**: Base64-encoded JSON containing Yammer group ID
+- **Decoding**: Automatically extracts actual group ID from community selection
+
+### Known Issues Being Fixed
+- Author names currently showing as "Anonymous" - working on extracting from expanded posts
+- Some demo content mixing in - removing fallback logic
+
+### Next Steps
+1. Push latest changes to GitHub
+2. Test with expanded posts API response
+3. Verify author names display correctly
+4. Ensure no demo content appears when authenticated
 
 ## 📱 Technical Details
 
