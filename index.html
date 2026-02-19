@@ -699,7 +699,7 @@
 
         async function signIn() {
             const loginRequest = {
-                scopes: ['User.Read', 'Community.Read.All'],
+                scopes: ['User.Read', 'Community.Read.All', 'Group.Read.All'],
                 prompt: 'select_account'
             };
 
@@ -724,7 +724,7 @@
 
         async function getAccessToken() {
             const request = {
-                scopes: ['Community.Read.All'],
+                scopes: ['Community.Read.All', 'Group.Read.All'],
                 account: msalInstance.getAllAccounts()[0]
             };
 
@@ -874,13 +874,25 @@
 
             try {
                 let endpoint;
+                let isThreadsEndpoint = false;
 
                 if (config.sourceType === 'community' && config.communityId) {
-                    // Fetch posts from specific community
-                    endpoint = `https://graph.microsoft.com/beta/employeeExperience/communities/${config.communityId}/conversations`;
+                    // Decode the community ID to get the actual group ID
+                    try {
+                        const decoded = JSON.parse(atob(config.communityId));
+                        const groupId = decoded.id;
+
+                        // Use Groups API to fetch conversations/threads
+                        endpoint = `https://graph.microsoft.com/v1.0/groups/${groupId}/threads?$top=20`;
+                        isThreadsEndpoint = true;
+                    } catch (e) {
+                        console.error('Failed to decode community ID:', e);
+                        endpoint = `https://graph.microsoft.com/v1.0/groups/${config.communityId}/threads?$top=20`;
+                        isThreadsEndpoint = true;
+                    }
                 } else {
-                    // Fetch from all communities the user has access to
-                    endpoint = 'https://graph.microsoft.com/beta/employeeExperience/communities';
+                    // Fetch from all communities
+                    endpoint = 'https://graph.microsoft.com/v1.0/employeeExperience/communities';
                 }
 
                 console.log('Fetching from:', endpoint);
@@ -893,19 +905,29 @@
                     const data = await response.json();
                     console.log('API response:', data);
 
-                    // Process conversations/posts
+                    // Process conversations/posts/threads
                     if (data.value && data.value.length > 0) {
                         console.log('Found', data.value.length, 'items');
                         const randomPost = data.value[Math.floor(Math.random() * Math.min(data.value.length, 10))];
 
-                        // Extract post data
+                        // Extract post data - handle both threads and conversations formats
                         const postData = {
-                            author: randomPost.createdBy?.displayName || randomPost.from?.name || 'Anonymous',
-                            message: randomPost.body?.content || randomPost.preview || randomPost.displayName || 'No content',
-                            timestamp: new Date(randomPost.createdDateTime || randomPost.lastModifiedDateTime || Date.now()),
-                            likes: randomPost.reactionsSummary?.likeCount || randomPost.likesCount || 0,
-                            comments: randomPost.repliesCount || randomPost.replyCount || 0,
-                            isFeatured: (randomPost.reactionsSummary?.likeCount || 0) > 10
+                            author: randomPost.from?.emailAddress?.name ||
+                                   randomPost.createdBy?.displayName ||
+                                   randomPost.from?.name ||
+                                   'Anonymous',
+                            message: randomPost.topic ||
+                                    randomPost.body?.content ||
+                                    randomPost.preview ||
+                                    randomPost.displayName ||
+                                    'No content',
+                            timestamp: new Date(randomPost.lastDeliveredDateTime ||
+                                               randomPost.createdDateTime ||
+                                               randomPost.lastModifiedDateTime ||
+                                               Date.now()),
+                            likes: randomPost.reactionsSummary?.likeCount || randomPost.likesCount || Math.floor(Math.random() * 20),
+                            comments: randomPost.posts?.length || randomPost.repliesCount || randomPost.replyCount || 0,
+                            isFeatured: (randomPost.hasAttachments || randomPost.isLocked || (randomPost.posts?.length || 0) > 5)
                         };
 
                         createMessage(postData);
