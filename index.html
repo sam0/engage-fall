@@ -870,21 +870,44 @@
             }
 
             try {
-                let endpoint = 'https://graph.microsoft.com/beta/employeeExperience/communities';
+                let endpoint;
 
                 if (config.sourceType === 'community' && config.communityId) {
-                    endpoint = `https://graph.microsoft.com/beta/employeeExperience/communities/${config.communityId}`;
+                    // Fetch posts from specific community
+                    endpoint = `https://graph.microsoft.com/beta/employeeExperience/communities/${config.communityId}/conversations`;
+                } else {
+                    // Fetch from all communities the user has access to
+                    endpoint = 'https://graph.microsoft.com/beta/employeeExperience/communities';
                 }
 
-                // Note: The actual posts endpoint might vary - using communities for now
                 const response = await fetch(endpoint, {
                     headers: { 'Authorization': `Bearer ${accessToken}` }
                 });
 
                 if (response.ok) {
-                    // Process and create message (implementation depends on actual Graph API response)
-                    createMessage();
+                    const data = await response.json();
+
+                    // Process conversations/posts
+                    if (data.value && data.value.length > 0) {
+                        const randomPost = data.value[Math.floor(Math.random() * Math.min(data.value.length, 10))];
+
+                        // Extract post data
+                        const postData = {
+                            author: randomPost.createdBy?.displayName || randomPost.from?.name || 'Anonymous',
+                            message: randomPost.body?.content || randomPost.preview || randomPost.displayName || 'No content',
+                            timestamp: new Date(randomPost.createdDateTime || randomPost.lastModifiedDateTime || Date.now()),
+                            likes: randomPost.reactionsSummary?.likeCount || randomPost.likesCount || 0,
+                            comments: randomPost.repliesCount || randomPost.replyCount || 0,
+                            isFeatured: (randomPost.reactionsSummary?.likeCount || 0) > 10
+                        };
+
+                        createMessage(postData);
+                    } else {
+                        console.log('No posts found, using demo data');
+                        createMessage(); // Fallback to demo if no posts
+                    }
                 } else {
+                    console.error('Graph API error:', response.status, await response.text());
                     createMessage(); // Fallback to demo
                 }
             } catch (error) {
