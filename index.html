@@ -962,9 +962,11 @@
         }
 
         function startFeed() {
+            // Load initial messages
             for (let i = 0; i < 6; i++) {
-                setTimeout(() => createMessage(), i * 800);
+                setTimeout(() => fetchGraphData(), i * 800);
             }
+            // Continue fetching at regular intervals
             updateIntervalId = setInterval(fetchGraphData, config.updateInterval);
         }
 
