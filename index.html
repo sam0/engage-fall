@@ -882,8 +882,8 @@
                         const decoded = JSON.parse(atob(config.communityId));
                         const groupId = decoded.id;
 
-                        // Use Groups API to fetch conversations/threads
-                        endpoint = `https://graph.microsoft.com/v1.0/groups/${groupId}/threads?$top=20`;
+                        // Use Groups API to fetch conversations/threads with posts expanded
+                        endpoint = `https://graph.microsoft.com/v1.0/groups/${groupId}/threads?$top=20&$expand=posts($select=from,body,receivedDateTime)`;
                         isThreadsEndpoint = true;
                     } catch (e) {
                         console.error('Failed to decode community ID:', e);
@@ -908,40 +908,49 @@
                     // Process conversations/posts/threads
                     if (data.value && data.value.length > 0) {
                         console.log('Found', data.value.length, 'items');
-                        const randomPost = data.value[Math.floor(Math.random() * Math.min(data.value.length, 10))];
+                        const randomThread = data.value[Math.floor(Math.random() * Math.min(data.value.length, 10))];
+
+                        console.log('Selected thread:', randomThread);
+
+                        // Get author from first post in thread
+                        let authorName = 'Community Member';
+                        if (randomThread.posts && randomThread.posts.length > 0) {
+                            const firstPost = randomThread.posts[0];
+                            authorName = firstPost.from?.emailAddress?.name ||
+                                        firstPost.from?.name ||
+                                        firstPost.sender?.emailAddress?.name ||
+                                        'Community Member';
+                        }
 
                         // Extract post data - handle both threads and conversations formats
                         const postData = {
-                            author: randomPost.from?.emailAddress?.name ||
-                                   randomPost.createdBy?.displayName ||
-                                   randomPost.from?.name ||
-                                   'Anonymous',
-                            message: randomPost.topic ||
-                                    randomPost.body?.content ||
-                                    randomPost.preview ||
-                                    randomPost.displayName ||
-                                    'No content',
-                            timestamp: new Date(randomPost.lastDeliveredDateTime ||
-                                               randomPost.createdDateTime ||
-                                               randomPost.lastModifiedDateTime ||
+                            author: authorName,
+                            message: randomThread.topic ||
+                                    randomThread.body?.content ||
+                                    randomThread.preview ||
+                                    randomThread.displayName ||
+                                    'Community post',
+                            timestamp: new Date(randomThread.lastDeliveredDateTime ||
+                                               randomThread.createdDateTime ||
+                                               randomThread.lastModifiedDateTime ||
                                                Date.now()),
-                            likes: randomPost.reactionsSummary?.likeCount || randomPost.likesCount || Math.floor(Math.random() * 20),
-                            comments: randomPost.posts?.length || randomPost.repliesCount || randomPost.replyCount || 0,
-                            isFeatured: (randomPost.hasAttachments || randomPost.isLocked || (randomPost.posts?.length || 0) > 5)
+                            likes: Math.floor(Math.random() * 20) + 1,
+                            comments: (randomThread.posts?.length || 1) - 1,
+                            isFeatured: (randomThread.hasAttachments || randomThread.isLocked || (randomThread.posts?.length || 0) > 5)
                         };
 
                         createMessage(postData);
                     } else {
-                        console.log('No posts found, using demo data');
-                        createMessage(); // Fallback to demo if no posts
+                        console.log('No threads found in response');
+                        // Don't create demo messages when authenticated
                     }
                 } else {
                     console.error('Graph API error:', response.status, await response.text());
-                    createMessage(); // Fallback to demo
+                    // Don't show demo content on error when authenticated
                 }
             } catch (error) {
                 console.error('Fetch error:', error);
-                createMessage(); // Fallback to demo
+                // Don't show demo content on error when authenticated
             }
         }
 
