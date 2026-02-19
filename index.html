@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yamfall - Social Stream Waterfall</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            padding: 20px 0;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 48px;
+            font-weight: 900;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+
+        #feed-container {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #feed {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding-bottom: 20px;
+        }
+
+        .message {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            animation: slideIn 0.5s ease-out;
+            opacity: 0;
+            transform: translateY(30px);
+            animation-fill-mode: forwards;
+        }
+
+        @keyframes slideIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            margin-right: 12px;
+        }
+
+        .message-meta {
+            flex: 1;
+        }
+
+        .author {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .timestamp {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .message-body {
+            color: #555;
+            line-height: 1.6;
+            font-size: 15px;
+        }
+
+        .controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            background: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .pause-btn {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .clear-btn {
+            background: #4ecdc4;
+            color: white;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 32px;
+            }
+
+            #feed {
+                grid-template-columns: 1fr;
+            }
+
+            .controls {
+                position: static;
+                justify-content: center;
+                margin-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌊 Yamfall</h1>
+            <p class="subtitle">Watch the stream flow by</p>
+        </header>
+
+        <div class="controls">
+            <button class="pause-btn" onclick="togglePause()">⏸️ Pause</button>
+            <button class="clear-btn" onclick="clearFeed()">🗑️ Clear</button>
+        </div>
+
+        <div id="feed-container">
+            <div id="feed"></div>
+        </div>
+    </div>
+
+    <script>
+        const sampleNames = ['Alice Chen', 'Bob Smith', 'Carol Davis', 'David Lee', 'Emma Wilson', 'Frank Brown', 'Grace Park', 'Henry Taylor'];
+        const sampleMessages = [
+            'Just shipped a new feature! 🚀',
+            'Great team meeting today. Thanks everyone!',
+            'Looking forward to the product launch next week.',
+            'Does anyone know the status of the Q1 report?',
+            'Coffee break anyone? ☕',
+            'Congrats to the design team on the new UI!',
+            'Reminder: All-hands meeting at 3pm.',
+            'Happy Friday everyone! 🎉',
+            'The new dashboard looks amazing!',
+            'Who wants to grab lunch?',
+            'Great presentation today, Sarah!',
+            'Working on some exciting new ideas.',
+            'Thanks for the feedback on my proposal.',
+            'Anyone up for a quick sync?',
+            'Love the energy in the office today!',
+            'Just finished a productive brainstorming session.',
+            'Check out the latest blog post on our site.',
+            'Excited about the upcoming conference!',
+        ];
+
+        let isPaused = false;
+        let messageCount = 0;
+        const maxMessages = 50;
+
+        function getInitials(name) {
+            return name.split(' ').map(n => n[0]).join('');
+        }
+
+        function createMessage() {
+            if (isPaused) return;
+
+            const name = sampleNames[Math.floor(Math.random() * sampleNames.length)];
+            const message = sampleMessages[Math.floor(Math.random() * sampleMessages.length)];
+            const now = new Date();
+
+            const messageEl = document.createElement('div');
+            messageEl.className = 'message';
+            messageEl.style.animationDelay = Math.random() * 0.3 + 's';
+            messageEl.innerHTML = `
+                <div class="message-header">
+                    <div class="avatar">${getInitials(name)}</div>
+                    <div class="message-meta">
+                        <div class="author">${name}</div>
+                        <div class="timestamp">${now.toLocaleTimeString()}</div>
+                    </div>
+                </div>
+                <div class="message-body">${message}</div>
+            `;
+
+            const feed = document.getElementById('feed');
+            feed.insertBefore(messageEl, feed.firstChild);
+            messageCount++;
+
+            // Remove old messages if too many
+            if (messageCount > maxMessages) {
+                feed.removeChild(feed.lastChild);
+                messageCount--;
+            }
+        }
+
+        function togglePause() {
+            isPaused = !isPaused;
+            const btn = document.querySelector('.pause-btn');
+            btn.textContent = isPaused ? '▶️ Resume' : '⏸️ Pause';
+        }
+
+        function clearFeed() {
+            document.getElementById('feed').innerHTML = '';
+            messageCount = 0;
+        }
+
+        // Create initial messages
+        for (let i = 0; i < 6; i++) {
+            setTimeout(() => createMessage(), i * 500);
+        }
+
+        // Keep adding messages
+        setInterval(createMessage, 3000);
+    </script>
+</body>
+</html>
