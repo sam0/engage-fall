@@ -864,7 +864,10 @@
         }
 
         async function fetchGraphData() {
+            console.log('fetchGraphData called - accessToken:', accessToken ? 'SET' : 'NOT SET', 'isDemoMode:', config.isDemoMode);
+
             if (config.isDemoMode || !accessToken) {
+                console.log('Using demo mode');
                 createMessage();
                 return;
             }
@@ -880,15 +883,19 @@
                     endpoint = 'https://graph.microsoft.com/beta/employeeExperience/communities';
                 }
 
+                console.log('Fetching from:', endpoint);
+
                 const response = await fetch(endpoint, {
                     headers: { 'Authorization': `Bearer ${accessToken}` }
                 });
 
                 if (response.ok) {
                     const data = await response.json();
+                    console.log('API response:', data);
 
                     // Process conversations/posts
                     if (data.value && data.value.length > 0) {
+                        console.log('Found', data.value.length, 'items');
                         const randomPost = data.value[Math.floor(Math.random() * Math.min(data.value.length, 10))];
 
                         // Extract post data
