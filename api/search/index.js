@@ -1,4 +1,5 @@
 // Azure Function: /api/search
+// Uses Microsoft Graph API for Viva Engage
 const fetch = require('node-fetch');
 
 module.exports = async function (context, req) {
@@ -12,7 +13,6 @@ module.exports = async function (context, req) {
     return;
   }
 
-  // Get access token from environment variable
   const accessToken = process.env.ENGAGE_ACCESS_TOKEN;
 
   if (!accessToken) {
@@ -24,82 +24,55 @@ module.exports = async function (context, req) {
   }
 
   try {
-    // Step 1: Search for threads by hashtag
-    const searchQuery = `
-      query {
-        search(query: "${query}", categories: THREADS, limit: 25) {
-          results {
-            ... on ThreadSearchResultConnection {
-              items {
-                databaseId
-                author
-                preview
-                createdAt
-              }
-            }
-          }
-        }
-      }
-    `;
+    // Use Microsoft Graph API to search for Engage/Yammer messages
+    // Note: Graph API for Viva Engage might be in beta or have limited support
+    // We'll try the employeeExperience endpoints
 
-    const searchResponse = await fetch('https://www.yammer.com/api/v1/graphql', {
+    const searchUrl = `https://graph.microsoft.com/beta/search/query`;
+
+    const searchBody = {
+      requests: [
+        {
+          entityTypes: ["message"],
+          query: {
+            queryString: query
+          },
+          from: 0,
+          size: 25
+        }
+      ]
+    };
+
+    context.log('Searching Graph API for:', query);
+
+    const searchResponse = await fetch(searchUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ query: searchQuery })
+      body: JSON.stringify(searchBody)
     });
 
     const searchData = await searchResponse.json();
-    const threads = searchData.data?.search?.results?.[0]?.items || [];
+    context.log('Graph API response:', JSON.stringify(searchData));
 
-    // Step 2: Enrich with full thread details (job titles)
-    const posts = await Promise.all(
-      threads.slice(0, 20).map(async (thread) => {
-        const threadQuery = `
-          query {
-            thread(databaseId: "${thread.databaseId}") {
-              threadStarter {
-                sender {
-                  ... on User {
-                    displayName
-                    jobTitle
-                  }
-                }
-                body {
-                  text
-                }
-                createdDateTime
-                likeCount
-                replyCount
-              }
-            }
-          }
-        `;
+    // Extract posts from Graph API response
+    const hits = searchData?.value?.[0]?.hitsContainers?.[0]?.hits || [];
 
-        const threadResponse = await fetch('https://www.yammer.com/api/v1/graphql', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ query: threadQuery })
-        });
+    const posts = hits.slice(0, 20).map(hit => {
+      const resource = hit.resource;
+      return {
+        author: resource?.from?.emailAddress?.name || resource?.createdBy?.user?.displayName || 'Unknown User',
+        title: 'Team Member', // Graph API might not have job title in message search
+        body: resource?.body?.content || resource?.bodyPreview || '',
+        time: resource?.createdDateTime || new Date().toISOString(),
+        reactions: 0, // Graph API message search might not include reaction counts
+        comments: 0
+      };
+    });
 
-        const threadData = await threadResponse.json();
-        const starter = threadData.data?.thread?.threadStarter;
-
-        return {
-          author: starter?.sender?.displayName || thread.author || 'Anonymous',
-          title: starter?.sender?.jobTitle || 'Team Member',
-          body: starter?.body?.text || thread.preview || '',
-          time: starter?.createdDateTime || thread.createdAt || new Date().toISOString(),
-          reactions: starter?.likeCount || 0,
-          comments: starter?.replyCount || 0
-        };
-      })
-    );
+    context.log(`Found ${posts.length} posts`);
 
     context.res = {
       status: 200,
@@ -109,9 +82,10 @@ module.exports = async function (context, req) {
 
   } catch (error) {
     context.log.error('Error:', error);
+    context.log.error('Stack:', error.stack);
     context.res = {
       status: 500,
-      body: { error: error.message }
+      body: { error: error.message, details: error.stack }
     };
   }
 };
