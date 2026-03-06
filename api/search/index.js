@@ -1,5 +1,5 @@
 // Azure Function: /api/search
-// Uses Microsoft Graph API for Viva Engage
+// Uses Yammer REST API (works better than Graph for now)
 const fetch = require('node-fetch');
 
 module.exports = async function (context, req) {
@@ -24,55 +24,58 @@ module.exports = async function (context, req) {
   }
 
   try {
-    // Use Microsoft Graph API to search for Engage/Yammer messages
-    // Note: Graph API for Viva Engage might be in beta or have limited support
-    // We'll try the employeeExperience endpoints
+    // Use Yammer REST API to search for messages
+    // Search by hashtag or keyword
+    const searchUrl = `https://www.yammer.com/api/v1/messages/search.json?search=${encodeURIComponent(query)}&limit=20`;
 
-    const searchUrl = `https://graph.microsoft.com/beta/search/query`;
-
-    const searchBody = {
-      requests: [
-        {
-          entityTypes: ["message"],
-          query: {
-            queryString: query
-          },
-          from: 0,
-          size: 25
-        }
-      ]
-    };
-
-    context.log('Searching Graph API for:', query);
+    context.log('Searching Yammer API for:', query);
 
     const searchResponse = await fetch(searchUrl, {
-      method: 'POST',
+      method: 'GET',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(searchBody)
+      }
     });
 
+    if (!searchResponse.ok) {
+      const errorText = await searchResponse.text();
+      context.log.error('Yammer API error:', searchResponse.status, errorText);
+      throw new Error(`Yammer API returned ${searchResponse.status}`);
+    }
+
     const searchData = await searchResponse.json();
-    context.log('Graph API response:', JSON.stringify(searchData));
+    context.log('Yammer API response keys:', Object.keys(searchData));
 
-    // Extract posts from Graph API response
-    const hits = searchData?.value?.[0]?.hitsContainers?.[0]?.hits || [];
+    // Extract messages and users from Yammer response
+    const messages = searchData.messages || [];
+    const references = searchData.references || [];
 
-    const posts = hits.slice(0, 20).map(hit => {
-      const resource = hit.resource;
+    // Create user lookup map
+    const users = {};
+    references.forEach(ref => {
+      if (ref.type === 'user') {
+        users[ref.id] = ref;
+      }
+    });
+
+    context.log(`Found ${messages.length} messages`);
+
+    // Transform to our format
+    const posts = messages.slice(0, 20).map(msg => {
+      const sender = users[msg.sender_id] || {};
+
       return {
-        author: resource?.from?.emailAddress?.name || resource?.createdBy?.user?.displayName || 'Unknown User',
-        title: 'Team Member', // Graph API might not have job title in message search
-        body: resource?.body?.content || resource?.bodyPreview || '',
-        time: resource?.createdDateTime || new Date().toISOString(),
-        reactions: 0, // Graph API message search might not include reaction counts
-        comments: 0
+        author: sender.full_name || 'Unknown User',
+        title: sender.job_title || 'Team Member',
+        body: msg.body?.plain || msg.body?.parsed || '',
+        time: msg.created_at || new Date().toISOString(),
+        reactions: msg.liked_by?.count || 0,
+        comments: msg.replied_to_id ? 1 : 0 // Yammer API doesn't return comment count directly
       };
     });
 
-    context.log(`Found ${posts.length} posts`);
+    context.log(`Returning ${posts.length} posts`);
 
     context.res = {
       status: 200,
@@ -81,7 +84,7 @@ module.exports = async function (context, req) {
     };
 
   } catch (error) {
-    context.log.error('Error:', error);
+    context.log.error('Error:', error.message);
     context.log.error('Stack:', error.stack);
     context.res = {
       status: 500,
