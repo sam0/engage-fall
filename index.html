@@ -148,7 +148,7 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',-apple-system,Blink
       </div>
     </div>
     <div id="campaignInput">
-      <div class="input-group"><input type="text" id="campaignQuery" placeholder="FHL, AI, or INNOVATION"></div>
+      <div class="input-group"><input type="text" id="campaignQuery" placeholder="Enter campaign hashtag"></div>
       <button class="go-btn" onclick="launchCampaign()">LET'S GO 🎉</button>
     </div>
     <div id="communityPicker">
@@ -187,53 +187,30 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',-apple-system,Blink
 
 <script>
 const CONFIG={MAX_CARDS:12,CARD_INTERVAL:3500,INITIAL_BURST:3,BURST_DELAY:600};
-let state={currentSource:'FHL',sourceData:[],queue:[],paused:false,feedInterval:null,totalPosts:0,totalReactions:0,totalComments:0};
+let state={currentSource:'DEMO',sourceData:[],queue:[],paused:false,feedInterval:null,totalPosts:0,totalReactions:0,totalComments:0};
 
 const DATA={
-  FHL:[
-    {author:"Steve Nguyen",title:"Principal PM",body:"PREDCT - the Engage FHL prediction market is OPEN! 51 hacks. 1,000 credits per person. Which hacks will win??? Will MCP Superpowers live up to the hype? Can Copilot Narrator pull off the upset?",time:"2026-03-03T16:17:56Z",reactions:42,comments:15},
-    {author:"Bri Pugh",title:"Chief of Staff",body:"We are coming up on one of the most anticipated events of the year - FHL! Fix Hack Learn (FHL) is a week-long event in E+D dedicated to learning, collaboration, and customer obsession.",time:"2026-02-13T18:56:17Z",reactions:56,comments:18},
-    {author:"Murali Sitaram",title:"CVP",body:"Next week's FHL is our chance to lean into learning by doing, as we continue evolving how we build in an AI-first world. The energy and momentum across our Eng, PM, and UX teams has been incredible.",time:"2026-02-27T02:17:27Z",reactions:48,comments:14},
-    {author:"Ales Holecek",title:"CVP",body:"It's time for Fix Hack Learn — FHL Week starts today! Welcome to FHL week! This is one of the most important weeks of the year for how we build, learn, and evolve.",time:"2026-02-28T07:10:59Z",reactions:71,comments:22},
-    {author:"Jose A. Guasch",title:"Engineering Manager",body:"Guide for FHL Week. Here are few tips and reminders to make most of this FHL week. The goal here is simple: move fast, have fun, and don't accidentally create risk along the way.",time:"2026-03-02T18:13:55Z",reactions:34,comments:11},
-    {author:"Steve Nguyen",title:"Principal PM",body:"For FHL week, I created a living, breathing, working prediction market. Yes, now you can predict which hacks will win awards during this FHL! I loaded up all the hacks currently listed.",time:"2026-03-01T21:17:13Z",reactions:45,comments:16},
-    {author:"Jose A. Guasch",title:"Engineering Manager",body:"FHL tip for AI builders: Where to host your AI hacks & demos. If you're building AI-focused hacks during FHL that are non-confidential and not directly tied to Viva Engage product work...",time:"2026-03-02T17:13:45Z",reactions:31,comments:9},
-    {author:"Steve Nguyen",title:"Principal PM",body:"PREDCT Day 1 Market Recap — What a Day to Be a Believer. The PREDCT prediction market opened this afternoon and the crowd wasted no time making their feelings known. The Rocket: AI infused content creation.",time:"2026-03-04T03:38:00Z",reactions:38,comments:12},
-    {author:"Tim Ward",title:"Principal SWE",body:"We're excited to open Engage Local MCP Server (stdio) for internal dogfooding—just in time for FHL Hackathon week. If you're building tools, automations, or AI-assisted workflows for Viva Engage, this is your chance!",time:"2026-02-26T20:10:29Z",reactions:52,comments:17},
-    {author:"Sara Smith",title:"Program Manager",body:"So far this week: E+D FHL Kick Off: AI-Forward Engineering, CAP: Multi Agent Swarm Orchestration, CAP: ODSP MCP - From Inception to Production, CAP: How I AI? Leveraging AI for Excellence.",time:"2026-03-04T18:04:30Z",reactions:29,comments:8},
-    {author:"Aditi Jha",title:"Software Engineer",body:"Engage MCP – FHL Week Usage. Please use this community as a safe space for working with Engage MCP during FHL week, so we can experiment without impacting the rest of the Microsoft Engage network.",time:"2026-02-28T01:34:11Z",reactions:36,comments:10},
-    {author:"E+D Community Manager",title:"Community Team",body:"Get ready for Fix Hack Learn (FHL) next week, March 2–6! Fix Hack Learn is your opportunity to fix what exists, hack something new, and learn by doing as we continue our journey to becoming an AI-forward engineering organization.",time:"2026-02-25T23:49:55Z",reactions:44,comments:13},
-    {author:"Bacho Vanwari",title:"Software Engineer",body:"Claw Camp for FHL. With popularity of OpenClaw, I am going to explore campclaw.ai during FHL week to learn more about orchestrating group of agents.",time:"2026-03-03T17:24:24Z",reactions:24,comments:7},
-    {author:"Ales Holecek",title:"CVP",body:"It's my favorite time of year! Fix Hack Learn (FHL) is coming up March 2-6! Check out this year's kickoff video or watch it on SharePoint.",time:"2026-02-10T19:33:07Z",reactions:39,comments:11},
-    {author:"Jimmy Sun",title:"Senior SWE",body:"Happy FHL and happy hacking! I have been building agent docs for ado/lab/kusto ops — grab what's useful. I used it on my glutamate lab e2e testing.",time:"2026-03-03T01:18:11Z",reactions:27,comments:6},
-    {author:"Sandra Martinez Vargas",title:"Principal PM",body:"Objective: Become a Leading Agent-driven development to deliver high ambition customer outcomes with quality — faster and more efficiently across all disciplines.",time:"2026-03-03T06:12:50Z",reactions:35,comments:9},
-    {author:"Venkat Ayyadevara",title:"Partner Director PM",body:"Thank you CAP for this work of art! Excited for FHL week!! The energy across the team is incredible.",time:"2026-03-03T17:33:50Z",reactions:43,comments:12},
-    {author:"Helen Liu",title:"Senior PM",body:"After using Engage-MCP this morning, I was inspired to quickly build a Viva Engage notification agent that monitors communities and sends digests. Built in under 2 hours with AI assistance!",time:"2026-03-04T02:18:02Z",reactions:41,comments:14},
-    {author:"Shahin Karuei",title:"Principal Engineer",body:"FHL Moonshot Ideas. For this FHL, I have a few ideas (note: these are moonshots). I'll likely focus on Lestrade CLI - An AI-powered CLI for on-call, incident response, and log analysis.",time:"2026-02-27T20:05:17Z",reactions:33,comments:10},
-    {author:"Sandra Valle",title:"Program Manager",body:"FHL Week - Have you registered? We are now on the third day of FHL with 153 hackers and 61 projects. Please do register, even if just joining to learn.",time:"2026-03-04T11:53:12Z",reactions:26,comments:5}
-  ],
-  GIVE:[
-    {author:"Rajesh Jha",title:"EVP",body:"I'm excited for Give Campaign! Each us of can make a difference by supporting the causes and communities that matter most, locally and globally. Visit aka.ms/Give and aka.ms/Volunteer2025.",time:"2025-10-01T20:56:12Z",reactions:64,comments:20},
-    {author:"Jonathon Anthony",title:"Director",body:"Give, Microsoft's month-long focus on philanthropy, is back! October is the time where we have the opportunity to contribute, support, and volunteer for the causes we care about.",time:"2025-10-02T00:13:28Z",reactions:48,comments:15},
-    {author:"Brad Smith (CELA)",title:"President",body:"Giving is part of our DNA at Microsoft. It's core to our culture and how we show up for our communities around the world. As the company kicks off the October Giving Campaign, learn why this moment matters.",time:"2025-10-01T17:41:48Z",reactions:82,comments:25},
-    {author:"Mais Al-Alem",title:"Community Lead",body:"GIVE Month Merch is Here! The most-awaited moment of the month has arrived — our Give merchandise corner is officially open at the office! Grab your hoodie, T-shirt, water bottle, tote bag, lanyard or sticker.",time:"2025-10-13T15:57:08Z",reactions:41,comments:12},
-    {author:"Cornelia Bjørke-Hill",title:"Team Lead",body:"UPDATE FROM TEAM GIVE. Yesterday, we filled Ask and Embla with the scent of Christmas and engagement! As part of our annual GIVE campaign, we gathered colleagues for a creative gingerbread house workshop.",time:"2025-12-10T06:45:03Z",reactions:36,comments:10},
-    {author:"Bacho Vanwari",title:"Software Engineer",body:"Everyone deserves basic education ... coming from teachers family, was always reminded about importance of literacy and how it helps individuals and communities to prosper.",time:"2025-10-08T18:39:11Z",reactions:44,comments:13},
-    {author:"John Bunney",title:"Senior Director",body:"Welcome to Give 2025. The annual Give Campaign is about making an impact in ways that are meaningful to you. It is also a wonderful opportunity to bring our vision to life throughout this year's GIVE campaign.",time:"2025-10-01T18:01:23Z",reactions:52,comments:16},
-    {author:"Sandra Martinez Vargas",title:"Principal PM",body:"Why I Give. Giving is simply part of who I am. I'm the kind of person who will help whenever I can—whether it's during the Giving Campaign or any other time of year. For me, giving isn't just about a campaign.",time:"2025-10-31T21:46:36Z",reactions:38,comments:11},
-    {author:"Ashish Chirputkar",title:"Principal Engineer",body:"October GIVE Campaign. Proud to be part of a community that gives back and supports meaningful causes this month and throughout. I have numerous causes I support including Education, Schools and Medical Research.",time:"2025-10-31T16:21:26Z",reactions:42,comments:14},
-    {author:"Nichole Peterson",title:"Program Manager",body:"Can you believe October is almost over?! You still have time participate in the various volunteer opportunities throughout the company or donate to organizations that resonate with you.",time:"2025-10-22T20:03:05Z",reactions:29,comments:8},
-    {author:"Erin Rosenthal",title:"Creative Director",body:"Food, craft, and creative expression are all key aspects of who I am. I give to increase access to these important aspects of life and to inspire others to go further with their ambitions.",time:"2025-10-31T21:36:00Z",reactions:33,comments:9}
-  ],
-  CUSTOMERSUCCESS:[
-    {author:"Allison Michels",title:"PM Lead",body:"Customer name: IFS. Primary customer voices: Caroline Morvan, Rebecca Eastwood. Seats: 8K~. Workplace switcher, one of the earliest. Issue 1: Dynamic membership limitations in communities.",time:"2026-02-18T00:22:16Z",reactions:31,comments:10},
-    {author:"Sarah Lundy",title:"Customer Success",body:"Thank you to the team behind today's Viva Engage Masterclass! Thank you for your thoughtful and engaging presentations during Viva Engage Masterclass Season two: Session 3.",time:"2026-02-24T01:18:00Z",reactions:42,comments:13},
-    {author:"Himanshu Nautiyal",title:"CSM",body:"SCI(M) India – Customer Success Story Newsletter | Jan '26. The January '26 Customer Success Story Newsletter is now out! It highlights inspiring customer stories and meaningful appreciations.",time:"2026-02-17T15:28:13Z",reactions:36,comments:11},
-    {author:"Erin Lambl",title:"Customer Success Lead",body:"Check out this video from Camila Murillo, CSAM for the LATAM region, packed with core best practices for driving powerful customer outcomes through Customer Health Success Programs!",time:"2026-02-26T21:18:38Z",reactions:44,comments:14},
-    {author:"Mike Flannagan",title:"VP Customer Success",body:"The FY26 Q3 Customer Success Town Hall is just around the corner. Join me and the Customer Success Leadership team next Thursday for an energizing session packed with updates, insights, and our signature live Q&A.",time:"2026-02-19T03:44:35Z",reactions:58,comments:18},
-    {author:"Judson Althoff",title:"EVP",body:"Commercial business update and leadership announcement. We have all been rapidly changing how we work as an AI-first company, and we are evolving how we operate to reflect the same.",time:"2026-02-03T17:01:14Z",reactions:76,comments:24},
-    {author:"Annabelle Kakulu",title:"Program Manager",body:"Practicing what I preach. Last week I made a whole post about using AI tools to expedite the bug triage process for non-engineers. I then reported a bug and figured I might as well get a head start on fixing.",time:"2026-02-27T18:17:41Z",reactions:33,comments:9},
-    {author:"Ashish Chirputkar",title:"Principal Engineer",body:"Turning the Corner on Videos, Rich Media, and Files. Across the company, some teams inherit especially complex charters — legacy systems, accumulated technical debt, and long-standing customer pain.",time:"2026-01-24T21:49:25Z",reactions:39,comments:12}
+  DEMO:[
+    {author:"Alex Chen",title:"Product Manager",body:"Excited to share our Q2 roadmap! We're focusing on three key areas: improving user experience, scaling our infrastructure, and building better collaboration tools. Looking forward to your feedback!",time:"2026-03-03T16:17:56Z",reactions:42,comments:15},
+    {author:"Jordan Smith",title:"Engineering Lead",body:"Our team hackathon was a huge success! We built 12 prototypes in 48 hours. The energy and creativity in the room was incredible. Can't wait for the next one!",time:"2026-03-02T18:56:17Z",reactions:56,comments:18},
+    {author:"Sam Taylor",title:"Designer",body:"Just finished redesigning our mobile app interface. The new version focuses on simplicity and accessibility. Beta testing starts next week - sign up if you want early access!",time:"2026-03-01T14:27:27Z",reactions:48,comments:14},
+    {author:"Morgan Lee",title:"Community Manager",body:"Welcome to all our new community members! This month we're hosting virtual coffee chats every Friday. It's a great way to meet the team and ask questions in a casual setting.",time:"2026-02-28T10:10:59Z",reactions:71,comments:22},
+    {author:"Casey Rivera",title:"Developer",body:"Pro tip: Always test your code in multiple browsers before deploying. Learned this the hard way today! Sharing a quick guide on cross-browser testing best practices.",time:"2026-02-27T15:13:55Z",reactions:34,comments:11},
+    {author:"Riley Parker",title:"Data Analyst",body:"Our user engagement metrics are up 35% this quarter! Here's what we learned: consistency matters, personalization works, and listening to feedback pays off. Full report coming soon.",time:"2026-02-26T11:17:13Z",reactions:45,comments:16},
+    {author:"Jamie Wilson",title:"DevOps Engineer",body:"Reminder: We're doing scheduled maintenance this weekend. Downtime will be minimal (2-3 hours). All updates will be posted in real-time on our status page.",time:"2026-02-25T09:13:45Z",reactions:31,comments:9},
+    {author:"Quinn Anderson",title:"Product Designer",body:"Design thinking workshop recap: We explored user journey mapping and rapid prototyping. The insights were fascinating! Planning a follow-up session next month.",time:"2026-02-24T13:38:00Z",reactions:38,comments:12},
+    {author:"Dakota Brown",title:"Software Engineer",body:"Open source contribution day was amazing! Our team contributed to 5 different projects. It's rewarding to give back to the community that helps us build better software.",time:"2026-02-23T08:10:29Z",reactions:52,comments:17},
+    {author:"Avery Martinez",title:"UX Researcher",body:"User research findings from last month are in! The top request is dark mode (finally implementing it!). Also learned users want better search functionality. Priorities set!",time:"2026-02-22T16:04:30Z",reactions:29,comments:8},
+    {author:"Skyler Davis",title:"QA Engineer",body:"Testing week update: Found and fixed 47 bugs across web and mobile. Big shoutout to the engineering team for the quick turnaround. Quality is looking great!",time:"2026-02-21T12:34:11Z",reactions:36,comments:10},
+    {author:"Parker Johnson",title:"Content Lead",body:"New content calendar is live! We're publishing tutorials every Monday, case studies on Wednesdays, and community spotlights on Fridays. Stay tuned for great content!",time:"2026-02-20T14:49:55Z",reactions:44,comments:13},
+    {author:"Reese Thompson",title:"Backend Developer",body:"API v2 is now in beta! We've improved response times by 40% and added better error handling. Documentation is available for early adopters.",time:"2026-02-19T11:24:24Z",reactions:24,comments:7},
+    {author:"Cameron White",title:"Project Manager",body:"Sprint planning for next quarter: We're tackling performance optimization, accessibility improvements, and mobile responsiveness. Excited about what's coming!",time:"2026-02-18T09:33:07Z",reactions:39,comments:11},
+    {author:"Drew Garcia",title:"Full Stack Developer",body:"Just deployed a major update! New features include real-time notifications, improved search, and better mobile support. Check it out and let us know what you think!",time:"2026-02-17T07:18:11Z",reactions:27,comments:6},
+    {author:"Harper Rodriguez",title:"Technical Writer",body:"Documentation overhaul is complete! Everything is now searchable, categorized, and includes code examples. Making it easier for everyone to build great things.",time:"2026-02-16T15:12:50Z",reactions:35,comments:9},
+    {author:"Sage Miller",title:"Security Engineer",body:"Security audit results: All systems passed! We've implemented 2FA, encrypted data at rest, and improved our incident response process. Your data is safe with us.",time:"2026-02-15T13:33:50Z",reactions:43,comments:12},
+    {author:"River Thomas",title:"Marketing Manager",body:"Campaign results are in! Our latest initiative reached 100K people and generated incredible engagement. Here's what worked and what we're doing next.",time:"2026-02-14T10:18:02Z",reactions:41,comments:14},
+    {author:"Phoenix Clark",title:"Solutions Architect",body:"Architecture review: We're migrating to a microservices model for better scalability. This will improve performance and make deployments faster. Exciting times ahead!",time:"2026-02-13T08:05:17Z",reactions:33,comments:10},
+    {author:"Kai Walker",title:"Support Lead",body:"Customer satisfaction scores hit an all-time high this month! Thank you to our amazing support team for going above and beyond. You make the difference!",time:"2026-02-12T14:53:12Z",reactions:26,comments:5}
   ]
 };
 
@@ -301,13 +278,13 @@ async function launchCampaign(){
       state.sourceData=[...data.posts];
       console.log(`✅ Loaded ${data.posts.length} real posts for #${campaign}`);
     }else{
-      console.warn(`No posts found for #${campaign}, using fallback data`);
-      state.sourceData=[...(DATA[campaign]||DATA.FHL)];
+      console.warn(`No posts found for #${campaign}, using demo data`);
+      state.sourceData=[...DATA.DEMO];
     }
   }catch(err){
     console.warn(`Could not connect to Engage API: ${err.message}`);
-    console.log('Using fallback data. Make sure server.js is running: node server.js');
-    state.sourceData=[...(DATA[campaign]||DATA.FHL)];
+    console.log('Using demo data. Connect to your Engage network for real posts.');
+    state.sourceData=[...DATA.DEMO];
   }
 
   startFeed(`✨ #${campaign}`);
@@ -315,7 +292,7 @@ async function launchCampaign(){
 
 function launchCommunity(c){
   state.currentSource='community';
-  state.sourceData=[...(c.name.includes('AI')?DATA.AI:DATA.FHL)];
+  state.sourceData=[...DATA.DEMO];
   startFeed(`🚀 ${c.name}`);
 }
 
@@ -345,7 +322,7 @@ function startFeed(label){
 
 function refillQueue(){
   if(!state.sourceData||state.sourceData.length===0){
-    state.sourceData=[...DATA.FHL];
+    state.sourceData=[...DATA.DEMO];
   }
   state.queue=shuffle([...state.sourceData]);
 }
