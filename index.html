@@ -148,7 +148,7 @@ html,body{height:100%;overflow:hidden;font-family:'Segoe UI',-apple-system,Blink
       </div>
     </div>
     <div id="campaignInput">
-      <div class="input-group"><input type="text" id="campaignQuery" placeholder="Enter campaign hashtag"></div>
+      <div class="input-group"><input type="text" id="campaignQuery" placeholder="Enter campaign hashtag" onkeypress="if(event.key==='Enter')launchCampaign()"></div>
       <button class="go-btn" onclick="launchCampaign()">LET'S GO 🎉</button>
     </div>
     <div id="communityPicker">
@@ -266,6 +266,16 @@ function filterCommunities(){renderCommunities(document.getElementById('commSear
 async function launchCampaign(){
   const q=document.getElementById('campaignQuery').value.trim();
   if(!q)return;
+
+  const btn=document.querySelector('#campaignInput .go-btn');
+  const originalText=btn.textContent;
+
+  // Disable button and show loading
+  btn.disabled=true;
+  btn.textContent='LOADING...';
+  btn.style.opacity='0.6';
+  btn.style.cursor='wait';
+
   const campaign=q.replace(/^#/,'').toUpperCase();
   state.currentSource=campaign;
 
